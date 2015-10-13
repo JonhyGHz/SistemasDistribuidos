@@ -120,19 +120,19 @@ public class Ventana extends javax.swing.JFrame {
         try {
             
             Alumno alumno = new Alumno("","","",JTNumeroControl.getText(),JTMateria.getText());
-            Socket client = new Socket("192.168.43.124", 1234); 
+            Socket client = new Socket("192.168.43.124",puerto); //Se realiza la conexion al servidor
           
             ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream()); 
-            output.writeObject(alumno);
-            output.flush();
-           
-            output.flush();   
+            output.writeObject(alumno);//Aqui mandamos al servidor el objeto alumno el
+            //cual contiene la informacion encapsulada
+            output.flush();  
         
         
             InputStream aux = client.getInputStream();
             DataInputStream flujo = new DataInputStream(aux);
-            String mensajito = flujo.readUTF();
-            JOptionPane.showMessageDialog(null,mensajito);
+            String mensajito = flujo.readUTF();//Recibimos el mensaje del servidor
+            //el cual es el promedio
+            JOptionPane.showMessageDialog(null,mensajito);//se imprime en pantalla
             output.close();
         } catch (Exception ex) {System.out.println(ex.toString());}
     }//GEN-LAST:event_jButton1ActionPerformed
