@@ -2,7 +2,7 @@ package envioinformacionsockets;
 public class Conexion extends javax.swing.JFrame {
     public Conexion() {
         initComponents();
-        JTHost.setText("192.168.10.10");
+        JTHost.setText("192.168.43.124");
         JTPuerto.setText("1234");
         setSize(500,350);
         setVisible(true);
