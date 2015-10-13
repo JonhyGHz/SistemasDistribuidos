@@ -48,6 +48,8 @@ public class Servidor extends JFrame
     public Servidor() throws ClassNotFoundException, InstantiationException, IllegalAccessException, SQLException
     {
         initComponets();
+        //se realizan las conexiones a las base de datos
+        //NOTA: NO ES RECOMENDABLE USAR ESTE TIPO DE IMPLEMENTACION, YA QUE ESTAN VISIBLES EL USUARIO Y PASSWORD
         Conect conexSQLServer = new Conect();
         connectionServer = conexSQLServer.Conectar("Yetzali","12345");
         Conexion conexOracle = new Conexion();
@@ -98,8 +100,8 @@ public class Servidor extends JFrame
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         int puerto = 1234; //Definimos el puerto a utilizar
-        int maximoConexiones = 10; // Maximo de conexiones simultaneas
-        ServerSocket servidor = null; 
+        int maximoConexiones = 20; // Maximo de conexiones simultaneas
+        ServerSocket servidor = null; //Declaramos el socketServidor
         Socket socket = null;
         
         //creacion del objeto alumno
@@ -126,75 +128,81 @@ public class Servidor extends JFrame
                 
                 //SE CARGA INFORMACION A LA BASE DE DATOS
                 //VALIDAR SI EXISTE EL ALUMNO EN LA BD
-                String matricula = alumno.getNumeroControl();
+                String matricula = alumno.getNumeroControl().toUpperCase();
                 System.out.println(alumno.getNumeroControl());
                 //PRIMERO SE REALIZA LA BUSQUEDA DEL ALUMNO EN LA BASE DE DATOS SQL SERVER
                 //busqueda de la matricula
                 resultado = obtenerMatricula(connectionServer);
-                boolean banderaMatricula = false;
-                while(resultado.next()){
+                boolean banderaMatricula = false;//variable booleana que controla la busqueda de
+                //la matricula del alumno
+
+                while(resultado.next()) 
+                {
                     
                     if(matricula.equalsIgnoreCase(resultado.getString(1)))//si esta la matrucla
                     {
-                        //
+                        //se imprime la matricula
                         System.out.println("Si esta la matricula "+matricula);
-                        banderaMatricula = true;
-                        break;
+                        banderaMatricula = true;//cambiamos bandera a verdadero
+                        break;//salimos del while
                     }else
                     {
                         banderaMatricula = false;
-                        //enviar mensaje que la matricula no existe
                     }
                     
                 }
-                resultado.close();
+                resultado.close();//cerramos el resultado de la consulta
+
                 //busqueda de la materia
-                String materia = alumno.getMateria();
-                System.out.println(alumno.getMateria());
-                boolean banderaMateria = false;
-                resultado = obtenerMateria(connectionServer);
+                String materia = alumno.getMateria().toUpperCase();//obtenemos la materia a buscar
+                
+                boolean banderaMateria = false;//variable booleana que controla la busqueda de materia
+
+                resultado = obtenerMateria(connectionServer);//obtenmos las materias de la base de datos
                 while(resultado.next()){
                     
                     if(materia.equalsIgnoreCase(resultado.getString(1)))//si esta la matrucla
                     {
-                        //
-                        System.out.println("Si esta la materia "+materia);
-                        banderaMateria = true;
-                        break;
+                        banderaMateria = true;//cambiamos la variable a verdadero
+                        break;//salimos del while
                     }else
                     {
                         banderaMateria = false;
-                        //enviar mensaje que la matricula no existe
                     }
                     
                 }
-                resultado.close();
+                resultado.close();//cerramos el resultado de la consulta
                 
                 //OBTENER EL PROMEDIO
-                long nMatricula = Long.parseLong(matricula);
+                long nMatricula = Long.parseLong(matricula);//convertimos la materia a tipo de dato a entero largo
                 if(banderaMateria==true && banderaMatricula==true)
-                {
-                    System.out.print("Si encontre en sql server");
+                {//Si las banderas quedaron en verdadero
+                    System.out.print("SI ESTA EN BD SQL SERVER");
+                    //realizamos una nueva consulta donde nos devuelve el promedio del alumno
                     sentenciaSQL = connectionServer.createStatement();
                     resultado = sentenciaSQL.executeQuery("select (MateriaAlumno.Parcial1+MateriaAlumno.Parcial2+MateriaAlumno.Parcial3+MateriaAlumno.Parcial4+MateriaAlumno.Parcial5)/5 AS PROMEDIO from MateriaAlumno where MateriaAlumno.IdMateria=(select Materia.IdMateria from Materia where Materia.Nombre='"+materia+"') AND MateriaAlumno.Matricula="+nMatricula);
                    
-//                    System.out.println(resultado.first());
-                    String promedio="";
+                    String promedio="";//variable para almacenar el promedio
                     while(resultado.next())
                     {
-                        promedio = resultado.getString(1);
-                        System.out.println(promedio);
+                        promedio = resultado.getString(1);//obtemos el promedio del resultado
+                        System.out.println(promedio);//se imprime promedio
                     }
-                    resultado.close();
+                    resultado.close();//se cierra el resultado de la consulta
+                    //enviamos el promedio al cliente
                     OutputStream aux = socket.getOutputStream();
                     DataOutputStream flujo= new DataOutputStream( aux );
                     if(promedio.equals(""))
-                    {flujo.writeUTF( "NO ESTAS INSCRITO EN LA MATERIA");}else{
-                    flujo.writeUTF( "Tu Promedio es: "+promedio);}
+                    {
+                        flujo.writeUTF( "NO ESTAS INSCRITO EN LA MATERIA");//mensaje de warning al cliente
+                    }else{
+                        flujo.writeUTF( "Tu Promedio es: "+promedio);//mensaje correcto
+                    }
                 }else{
-                    //ahora buscar en oracle
+                    //EN CASO DE NO ENCONTRAR EN SQL SERVER
+                    //AHORA SE BUSCA EN ORACLE
                     System.out.println("buscare en oracle");
-                    ResultSet resultadoSQL = obtenerMatricula(connectionORACLE);
+                    ResultSet resultadoSQL = obtenerMatricula(connectionORACLE);//Se obtiene las matriculas
                     banderaMatricula = false;
                     while(resultadoSQL.next()){
                     
@@ -202,58 +210,64 @@ public class Servidor extends JFrame
                         {
                         //
                             System.out.println("Si esta la matricula "+matricula);
-                            banderaMatricula = true;
-                            break;
+                            banderaMatricula = true;//cambiamos la variable a verdadero
+                            break;//salimos del while
                         }else
                         {
                             banderaMatricula = false;
-                        //enviar mensaje que la matricula no existe
                         }
                     
                     }
-                    resultadoSQL.close();
+                    resultadoSQL.close();//cerramos la variable de resultado de la consulta
                     //busqueda de la materia
                     System.out.println(alumno.getMateria());
                     banderaMateria = false;
-                    resultadoSQL = obtenerMateria(connectionORACLE);
+                    resultadoSQL = obtenerMateria(connectionORACLE);//obtenemos las materias
                     while(resultadoSQL.next()){
                     
                         if(materia.equalsIgnoreCase(resultadoSQL.getString(1)))//si esta la materia
                         {
                         //
                             System.out.println("Si esta la materia "+materia);
-                            banderaMateria = true;
-                            break;
+                            banderaMateria = true;//cambiamos la variable a verdadero
+                            break;//salimos del ciclo
                         }else
                         {
                             banderaMateria = false;
-                        //enviar mensaje que la matricula no existe
                         }
                     
                     }
-                    resultadoSQL.close();
+                    resultadoSQL.close();//cerramos la consulta
                     
                     //obtenemos el promedio
                     nMatricula = Long.parseLong(matricula);
                     if(banderaMateria==true && banderaMatricula==true)
-                    {
+                    {//en caso de ser las variables verdaderas
+
+                        //ejecutamos la consulta que nos devuelve el promedio
                         System.out.print("Si encontre en oracle");
-                    sentenciaSQL = connectionORACLE.createStatement();
-                    resultadoSQL = sentenciaSQL.executeQuery("SELECT (M.PARCIAL_1 + M.PARCIAL_2 + M.PARCIAL_3 + M.PARCIAL_4 + M.PARCIAL_5)/5 AS PROMEDIO FROM MATERIA_ALUMNO M WHERE M.ID_MATERIA = (SELECT MA.ID_MATERIA FROM MATERIA MA WHERE MA.NOMBRE = '"+materia+"') AND M.MATRICULA ="+nMatricula);
+                        sentenciaSQL = connectionORACLE.createStatement();
+                        resultadoSQL = sentenciaSQL.executeQuery("SELECT (M.PARCIAL_1 + M.PARCIAL_2 + M.PARCIAL_3 + M.PARCIAL_4 + M.PARCIAL_5)/5 AS PROMEDIO FROM MATERIA_ALUMNO M WHERE M.ID_MATERIA = (SELECT MA.ID_MATERIA FROM MATERIA MA WHERE MA.NOMBRE = '"+materia+"') AND M.MATRICULA ="+nMatricula);
                    
 //                    System.out.println(resultado.first());
-                    String promedio="";
-                    while(resultadoSQL.next())
-                    {
-                        promedio = resultadoSQL.getString(1);
-                        System.out.println("promedio:"+promedio);
-                    }
-                    resultadoSQL.close();
-                    OutputStream aux = socket.getOutputStream();
-                    DataOutputStream flujo= new DataOutputStream( aux );
-                    if(promedio.equals(""))
-                    {flujo.writeUTF( "NO ESTAS INSCRITO EN LA MATERIA");}else{
-                    flujo.writeUTF( "Tu Promedio es: "+promedio);}
+                        String promedio="";
+                        while(resultadoSQL.next())
+                        {
+                            promedio = resultadoSQL.getString(1);//obtenemos el cliente
+                            System.out.println("promedio:"+promedio);
+                        }
+                        resultadoSQL.close();//cerramos la consulta
+                        //ENVIAMOS PROMEDIO AL CLIENTE
+                        OutputStream aux = socket.getOutputStream();
+                        DataOutputStream flujo= new DataOutputStream( aux );
+                        if(promedio.equals(""))
+                        {
+                            System.out.println("no tiene promedio");
+                            flujo.writeUTF( "NO ESTAS INSCRITO EN LA MATERIA");
+                        }
+                        else{
+                            flujo.writeUTF( "Tu Promedio es: "+promedio);
+                        }
                     }else
                     {
                         //mandar mensaje que el alumno y/o  materia no existe
@@ -263,21 +277,7 @@ public class Servidor extends JFrame
                     }
                     
                 }
-               
-                
-                
-//                sentenciaSQL = connectionServer.createStatement();
-//                resultado = sentenciaSQL.executeQuery("select (MateriaAlumno.Parcial1+MateriaAlumno.Parcial2+MateriaAlumno.Parcial3+MateriaAlumno.Parcial4+MateriaAlumno.Parcial5)/5 AS PROMEDIO from MateriaAlumno where MateriaAlumno.IdMateria=(select Materia.IdMateria from Materia where Materia.Nombre='FISICA GENERAL') AND MateriaAlumno.Matricula=12520214");
-//                
-                
-                
-                
-                //ENVIA INFORMACION
-                OutputStream aux = socket.getOutputStream();
-                DataOutputStream flujo= new DataOutputStream( aux );
-                flujo.writeUTF( "hola: "+alumno.getNombre());
-                //socket.close();
-                entrada.close();
+                entrada.close();//cerramos la conexion del cliente
                 
             }
             
@@ -297,6 +297,7 @@ public class Servidor extends JFrame
         
         
     }
+    //metodo para obtenter todas las matriculas dependiendo la conexion de la base de datos
     public ResultSet obtenerMatricula(Connection c) throws SQLException
     {
         try
@@ -306,9 +307,10 @@ public class Servidor extends JFrame
             resultado = sentencia.executeQuery("SELECT matricula FROM Alumno");
             //sentencia.close();
         }catch(Exception e){System.out.print("Error en el select");}
-        return resultado;
+        return resultado;//regresamos el resultado de la consulta
     }
-    
+
+    //Metodo para obtener todas las materias de una determina conexion
     public ResultSet obtenerMateria(Connection c) throws SQLException
     {
         try
@@ -323,9 +325,9 @@ public class Servidor extends JFrame
     public static void main(String args[]) {
        
         try{
-            Servidor objServer= new Servidor();
-        objServer.setVisible(true);
-        objServer.iniciarServidor();
+            Servidor objServer= new Servidor();//se crea objeto servidor
+            objServer.setVisible(true);//se visualiza la ventana
+            objServer.iniciarServidor();//mandamos a llamar el metodo para iniciar el servidor
         }catch(Exception e){}
         
     }
