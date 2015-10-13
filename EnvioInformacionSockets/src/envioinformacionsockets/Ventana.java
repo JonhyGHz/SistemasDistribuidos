@@ -118,26 +118,21 @@ public class Ventana extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 
         try {
-            Socket client; 
-            String nombre = JTNombre.getText();
-            String apellidoP = JTApellidoPaterno.getText();
-            String apellidoM = JTApellidoMaterno.getText();
-            String numeroControl = JTNumeroControl.getText();
-            String materia = JTMateria.getText();
             
-            Alumno alumno = new Alumno(nombre,apellidoP,apellidoM,numeroControl,materia);
-            client = new Socket(host, puerto);
+            Alumno alumno = new Alumno("","","",JTNumeroControl.getText(),JTMateria.getText());
+            Socket client = new Socket("192.168.43.124", 1234); 
+          
             ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream()); 
-//            ObjectInputStream input = new ObjectInputStream(client.getInputStream()); 
+            output.writeObject(alumno);
             output.flush();
-            output.writeObject(alumno);   
-//            System.out.println(input.readUTF());  
+           
+            output.flush();   
+        
+        
             InputStream aux = client.getInputStream();
             DataInputStream flujo = new DataInputStream(aux);
-//            System.out.println();
-            output.close();
-            //Mensaje respecto al promedio del alumno
-            JOptionPane.showMessageDialog(null,flujo.readUTF());
+            String mensajito = flujo.readUTF();
+            JOptionPane.showMessageDialog(null,mensajito);
             output.close();
         } catch (Exception ex) {System.out.println(ex.toString());}
     }//GEN-LAST:event_jButton1ActionPerformed
